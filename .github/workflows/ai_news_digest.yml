@@ -2,7 +2,7 @@ name: AI News Digest Workflow
 
 on:
   schedule:
-    - cron: '30 23 * * *'  # Runs every day at 11:30 PM UTC
+    - cron: '30 02 * * *'  # Runs every day at 02:00 AM UTC
   workflow_dispatch:       # Allows manual triggering
 
 jobs:

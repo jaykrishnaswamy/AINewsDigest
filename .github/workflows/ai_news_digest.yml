@@ -3,7 +3,8 @@
 on:
   schedule:
     - cron: '30 23 * * *'  # Runs every day at 9:00 AM UTC
-
+    workflow_dispatch: 
+    
 jobs:
   build:
     runs-on: ubuntu-latest

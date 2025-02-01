@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import os
 import requests
 import time
+from textblob import TextBlob
 
 class Config:
     def __init__(self):
@@ -82,7 +83,7 @@ class NewsDigest:
 
     def analyze_content(self, entries):
         if not entries:
-            return {'summary': 'No recent updates', 'explanation': '', 'sources': []}
+            return {'summary': 'No recent updates', 'explanation': '', 'sources': [], 'sentiment': 0}
 
         content = "\n\n".join([f"Title: {e['title']}\nSummary: {e['summary']}" for e in entries])
 
@@ -105,13 +106,21 @@ class NewsDigest:
                 max_tokens=500
             )
 
+            sentiment = self.analyze_sentiment(content)
+
             return {
                 'summary': summary_response.choices[0].message.content,
                 'explanation': explanation_response.choices[0].message.content,
-                'sources': [{'title': e['title'], 'link': e['link']} for e in entries]
+                'sources': [{'title': e['title'], 'link': e['link']} for e in entries],
+                'sentiment': sentiment
             }
         except Exception as e:
-            return {'summary': f"Error analyzing content: {str(e)}", 'explanation': '', 'sources': []}
+            return {'summary': f"Error analyzing content: {str(e)}", 'explanation': '', 'sources': [], 'sentiment': 0}
+
+    def analyze_sentiment(self, text):
+        blob = TextBlob(text)
+        sentiment = blob.sentiment.polarity
+        return sentiment
 
 def send_email(sender_email, app_password, recipient_email, digest_results):
     try:
@@ -129,6 +138,7 @@ def send_email(sender_email, app_password, recipient_email, digest_results):
                 email_body += f"\n{source}:\n"
                 email_body += f"SUMMARY:\n{content['summary']}\n\n"
                 email_body += f"KEY CONCEPTS EXPLAINED:\n{content['explanation']}\n\n"
+                email_body += f"SENTIMENT: {get_sentiment_label(content['sentiment'])}\n\n"
                 if content.get('sources'):
                     email_body += "Sources:\n"
                     for source in content['sources']:
@@ -157,12 +167,29 @@ def format_telegram_message(digest_results):
         message += f"📰 <b>{source}</b>\n"
         message += f"<b>Summary:</b>\n{content['summary']}\n\n"
         message += f"<b>Key Concepts:</b>\n{content['explanation']}\n\n"
+        message += f"<b>Sentiment:</b> {get_sentiment_emoji(content['sentiment'])}\n\n"
         if content.get('sources'):
             message += "<b>Sources:</b>\n"
             for source in content['sources']:
                 message += f"• <a href='{source['link']}'>{source['title']}</a>\n"
         message += "➖➖➖➖➖➖➖➖\n\n"
     return message
+
+def get_sentiment_label(sentiment):
+    if sentiment > 0.3:
+        return "Positive"
+    elif sentiment < -0.3:
+        return "Negative"
+    else:
+        return "Neutral"
+
+def get_sentiment_emoji(sentiment):
+    if sentiment > 0.3:
+        return "😊"
+    elif sentiment < -0.3:
+        return "😔"
+    else:
+        return "😐"
 
 def main():
     try:

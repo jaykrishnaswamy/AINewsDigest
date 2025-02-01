@@ -6,6 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 import os
 import requests
+import time
 
 class Config:
     def __init__(self):
@@ -23,7 +24,11 @@ class Config:
             'OpenAI Blog': 'https://openai.com/blog/rss/',
             'Google AI Blog': 'http://googleaiblog.blogspot.com/atom.xml',
             'IBM Research Blog - AI': 'https://research.ibm.com/blog/category/artificial-intelligence/feed',
-            'FAIR Blog': 'https://research.facebook.com/blog/ai-category/rss/'
+            'FAIR Blog': 'https://research.facebook.com/blog/ai-category/rss/',
+            'AWS Machine Learning Blog': 'https://aws.amazon.com/blogs/machine-learning/feed/',
+            'Microsoft Research Blog - AI': 'https://www.microsoft.com/en-us/research/blog/category/artificial-intelligence/feed/',
+            'NVIDIA AI Blog': 'https://blogs.nvidia.com/blog/category/deep-learning/feed/',
+            'AI Trends': 'https://aitrends.com/feed/'
         }
 
     def get_rss_feeds(self):
@@ -58,7 +63,7 @@ class NewsDigest:
     def __init__(self, api_key):
         self.client = OpenAI(api_key=api_key)
 
-    def fetch_rss_feed(self, feed_url, days=1):
+    def fetch_rss_feed(self, feed_url, days=7):
         feed = feedparser.parse(feed_url)
         recent_entries = []
         cutoff_date = datetime.now() - timedelta(days=days)
@@ -73,7 +78,7 @@ class NewsDigest:
                     'published': pub_date
                 })
 
-        return recent_entries[:5]
+        return recent_entries[:10]
 
     def analyze_content(self, entries):
         if not entries:
@@ -130,7 +135,8 @@ def send_email(sender_email, app_password, recipient_email, digest_results):
                         email_body += f"- {source['title']}: {source['link']}\n"
                 email_body += "-" * 50 + "\n"
 
-        msg.attach(MIMEText(email_body.encode('utf-8'), 'plain', 'utf-8'))
+        body = MIMEText(email_body, 'plain', 'utf-8')
+        msg.attach(body)
 
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
@@ -175,11 +181,19 @@ def main():
         telegram_notifier.send_message("Starting AI News Digest...")
 
         for feed_name, feed_url in rss_feeds.items():
-            print(f"Fetching {feed_name}...")
-            entries = digest.fetch_rss_feed(feed_url)
-            if entries:
-                analysis = digest.analyze_content(entries)
-                all_digests[feed_name] = analysis
+            retries = 3
+            while retries > 0:
+                print(f"Fetching {feed_name}...")
+                try:
+                    entries = digest.fetch_rss_feed(feed_url)
+                    if entries:
+                        analysis = digest.analyze_content(entries)
+                        all_digests[feed_name] = analysis
+                    break
+                except Exception as e:
+                    print(f"Error fetching {feed_name}: {str(e)}. Retries left: {retries}")
+                    retries -= 1
+                    time.sleep(5)  # Wait for 5 seconds before retrying
 
         email_result = send_email(
             credentials['SENDER_EMAIL'],

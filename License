@@ -1,22 +1,45 @@
-License
-This project is licensed under the MIT License.
+# AI News Digest
 
-Copyright (c) [2025] [N (Krishna) Krishnaswamy]
+This project is a workflow designed to fetch, process, and send AI-related news to email and Telegram subscribers. It uses GitHub Actions to automate the entire process, including retrieving data, formatting it, and delivering it via notifications.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+## Features
+- Automatically fetches the latest AI-related news daily.
+- Sends notifications via:
+  - **Email** (using secure credentials).
+  - **Telegram** (via bot integration).
+- Secure handling of sensitive data using GitHub Secrets.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+## Workflow Overview
+- **Trigger:** The workflow runs daily at 10:00 AM PST or can be triggered manually.
+- **Actions:**
+  - Sets up a Python environment.
+  - Installs dependencies.
+  - Executes the `AINews.py` script to send the news digest.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## How to Use
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/jaykrishnaswamy/AINewsDigest.git
+   ```
+2. **Customize the workflow:**
+   - Add your own `requirements.txt` and `AINews.py` to fit your needs.
+
+### Secrets
+Ensure you set the following secrets in your repository settings:
+- `OPENAI_API_KEY`: API key for accessing OpenAI services.
+- `SENDER_EMAIL`: Sender's email address for notifications.
+- `APP_PASSWORD`: App password for the email account.
+- `RECIPIENT_EMAIL`: Email address to receive notifications.
+- `TELEGRAM_BOT_TOKEN`: Telegram bot token for sending messages.
+- `TELEGRAM_CHAT_ID`: Chat ID for the Telegram recipient.
+
+## Contributing
+Contributions are welcome! Feel free to fork the repository, submit pull requests, or report issues.
+
+## License
+This project is dual-licensed:
+
+- **[MIT License](LICENSE-MIT.txt)** for open-source use.
+- **[Commercial License](LICENSE-COMMERCIAL.txt)** for proprietary/commercial use.
+
+To obtain a commercial license, please contact [jaykrishnaswamy@gmail.com].

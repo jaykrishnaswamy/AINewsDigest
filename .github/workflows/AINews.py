@@ -51,10 +51,10 @@ class TelegramNotifier:
             response = requests.post(self.base_url, json=payload)
             response.raise_for_status()
             return True
-      except Exception as e:
-    print(f"Telegram notification error: {str(e)}")
-    print(f"Response content: {response.content}")
-    return False
+        except Exception as e:
+            print(f"Telegram notification error: {str(e)}")
+            print(f"Response content: {response.content}")
+            return False
 
 class NewsDigest:
     def __init__(self, api_key):
@@ -195,6 +195,7 @@ def main():
 
         telegram_notifier.send_message("Starting AI News Digest...")
 
+        print("Fetching RSS feeds...")
         for feed_name, feed_url in rss_feeds.items():
             retries = 3
             while retries > 0:
@@ -202,6 +203,7 @@ def main():
                 try:
                     entries = digest.fetch_rss_feed(feed_url)
                     if entries:
+                        print(f"Analyzing content for {feed_name}...")
                         analysis = digest.analyze_content(entries)
                         all_digests[feed_name] = analysis
                     break
@@ -209,9 +211,8 @@ def main():
                     print(f"Error fetching {feed_name}: {str(e)}. Retries left: {retries}")
                     retries -= 1
                     time.sleep(5)  # Wait for 5 seconds before retrying
-                    
-        telegram_notifier.send_message("Ending AI News Digest...")
-        
+
+        print("Sending email notification...")
         email_result = send_email(
             credentials['SENDER_EMAIL'],
             credentials['APP_PASSWORD'],
@@ -220,12 +221,14 @@ def main():
         )
         print(email_result)
 
+        print("Sending Telegram notification...")
         telegram_message = format_telegram_message(all_digests)
         telegram_notifier.send_message(telegram_message)
         print("Telegram notification sent successfully!")
 
     except Exception as e:
         print(f"Error in main execution: {str(e)}")
+        raise e
 
 if __name__ == "__main__":
     main()

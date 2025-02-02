@@ -221,7 +221,9 @@ def main():
                     print(f"Error fetching {feed_name}: {str(e)}. Retries left: {retries}")
                     retries -= 1
                     time.sleep(5)  # Wait for 5 seconds before retrying
-
+                    
+        telegram_notifier.send_message("Ending AI News Digest...")
+        
         email_result = send_email(
             credentials['SENDER_EMAIL'],
             credentials['APP_PASSWORD'],

@@ -39,26 +39,22 @@ class TelegramNotifier:
     def __init__(self, bot_token, chat_id):
         self.bot_token = bot_token
         self.chat_id = chat_id
-        self.base_url = f"https://api.telegram.org/bot{bot_token}"
+        self.base_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
 
     def send_message(self, text):
         try:
-            url = f"{self.base_url}/sendMessage"
-            max_length = 4096
-            messages = [text[i:i+max_length] for i in range(0, len(text), max_length)]
-
-            for message in messages:
-                payload = {
-                    'chat_id': self.chat_id,
-                    'text': message,
-                    'parse_mode': 'HTML'
-                }
-                response = requests.post(url, json=payload)
-                response.raise_for_status()
+            payload = {
+                'chat_id': self.chat_id,
+                'text': text,
+                'parse_mode': 'HTML'
+            }
+            response = requests.post(self.base_url, json=payload)
+            response.raise_for_status()
             return True
-        except Exception as e:
-            print(f"Telegram notification error: {str(e)}")
-            return False
+      except Exception as e:
+    print(f"Telegram notification error: {str(e)}")
+    print(f"Response content: {response.content}")
+    return False
 
 class NewsDigest:
     def __init__(self, api_key):
@@ -160,19 +156,11 @@ def send_email(sender_email, app_password, recipient_email, digest_results):
 
 def format_telegram_message(digest_results):
     if all(content['summary'] == 'No recent updates' for content in digest_results.values()):
-        return "🤖 <b>Daily AI News Digest - No New Updates</b>\n\nThere are no recent updates for your AI news digest."
+        return "No new updates."
     
-    message = "🤖 <b>Daily AI News Digest</b>\n\n"
+    message = "Daily AI News Digest\n\n"
     for source, content in digest_results.items():
-        message += f"📰 <b>{source}</b>\n"
-        message += f"<b>Summary:</b>\n{content['summary']}\n\n"
-        message += f"<b>Key Concepts:</b>\n{content['explanation']}\n\n"
-        message += f"<b>Sentiment:</b> {get_sentiment_emoji(content['sentiment'])}\n\n"
-        if content.get('sources'):
-            message += "<b>Sources:</b>\n"
-            for source in content['sources']:
-                message += f"• <a href='{source['link']}'>{source['title']}</a>\n"
-        message += "➖➖➖➖➖➖➖➖\n\n"
+        message += f"{source}: {content['summary']}\n\n"
     return message
 
 def get_sentiment_label(sentiment):

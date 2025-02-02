@@ -158,31 +158,48 @@ def send_email(sender_email, app_password, recipient_email, digest_results):
 def format_telegram_message(digest_results):
     if all(content['summary'] == 'No recent updates' for content in digest_results.values()):
         return ["🤖 <b>Daily AI News Digest - No New Updates</b>\n\nThere are no recent updates for your AI news digest."]
-    
+
     messages = []
-    message = "🤖 <b>Daily AI News Digest</b>\n\n"
     for source, content in digest_results.items():
-        source_message = f"📰 <b>{source}</b>\n"
-        source_message += f"<b>Summary:</b>\n{content['summary']}\n\n"
-        source_message += f"<b>Key Concepts:</b>\n{content['explanation']}\n\n"
-        source_message += f"<b>Sentiment:</b> {get_sentiment_emoji(content['sentiment'])}\n\n"
+        source_messages = []
+        source_message = f"📰 <b>{source}</b>\n\n"
+        
+        summary = f"<b>Summary:</b>\n{content['summary']}\n\n"
+        explanation = f"<b>Key Concepts:</b>\n{content['explanation']}\n\n"
+        sentiment = f"<b>Sentiment:</b> {get_sentiment_emoji(content['sentiment'])}\n\n"
+        
+        if len(source_message + summary) <= 4096:
+            source_message += summary
+        else:
+            source_messages.append(source_message)
+            source_message = summary
+        
+        if len(source_message + explanation) <= 4096:
+            source_message += explanation
+        else:
+            source_messages.append(source_message)
+            source_message = explanation
+        
+        if len(source_message + sentiment) <= 4096:
+            source_message += sentiment
+        else:
+            source_messages.append(source_message)
+            source_message = sentiment
+        
         if content.get('sources'):
             source_message += "<b>Sources:</b>\n"
             for source in content['sources']:
-                source_message += f"• <a href='{source['link']}'>{source['title']}</a>\n"
-        source_message += "➖➖➖➖➖➖➖➖\n\n"
+                source_link = f"• <a href='{source['link']}'>{source['title']}</a>\n"
+                if len(source_message + source_link) <= 4096:
+                    source_message += source_link
+                else:
+                    source_messages.append(source_message)
+                    source_message = source_link
         
-        if len(message + source_message) <= 4096:
-            message += source_message
-        else:
-            messages.append(message)
-            message = source_message
-    
-    if message:
-        messages.append(message)
-    
+        source_messages.append(source_message)
+        messages.extend(source_messages)
+        
     return messages
-
 def get_sentiment_label(sentiment):
     if sentiment > 0.3:
         return "Positive"

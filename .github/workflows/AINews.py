@@ -80,7 +80,7 @@ class NewsDigest:
 
     def analyze_content(self, entries):
         if not entries:
-            return {'summary': 'No recent updates', 'explanation': '', 'sources': [], 'sentiment': 0}
+            return {'summary': 'No recent updates', 'explanation': '', 'sources': [], 'sentiment': 0, 'key_insights': []}
 
         content = "\n\n".join([f"Title: {e['title']}\nSummary: {e['summary']}" for e in entries])
 
@@ -103,16 +103,26 @@ class NewsDigest:
                 max_tokens=500
             )
 
+            insights_response = self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are an AI analyst extracting key insights and takeaways from news articles."},
+                    {"role": "user", "content": f"Extract the key insights and actionable takeaways from these AI news articles in a bullet-point list:\n\n{content}"}
+                ],
+                max_tokens=500
+            )
+
             sentiment = self.analyze_sentiment(content)
 
             return {
                 'summary': summary_response.choices[0].message.content,
                 'explanation': explanation_response.choices[0].message.content,
                 'sources': [{'title': e['title'], 'link': e['link']} for e in entries],
-                'sentiment': sentiment
+                'sentiment': sentiment,
+                'key_insights': insights_response.choices[0].message.content.strip().split('\n')
             }
         except Exception as e:
-            return {'summary': f"Error analyzing content: {str(e)}", 'explanation': '', 'sources': [], 'sentiment': 0}
+            return {'summary': f"Error analyzing content: {str(e)}", 'explanation': '', 'sources': [], 'sentiment': 0, 'key_insights': []}
 
     def analyze_sentiment(self, text):
         blob = TextBlob(text)
@@ -134,7 +144,10 @@ def send_email(sender_email, app_password, recipient_email, digest_results):
             for source, content in digest_results.items():
                 email_body += f"\n{source}:\n"
                 email_body += f"SUMMARY:\n{content['summary']}\n\n"
-                email_body += f"KEY CONCEPTS EXPLAINED:\n{content['explanation']}\n\n"
+                email_body += f"KEY INSIGHTS:\n"
+                for insight in content['key_insights']:
+                    email_body += f"- {insight}\n"
+                email_body += f"\nKEY CONCEPTS EXPLAINED:\n{content['explanation']}\n\n"
                 email_body += f"SENTIMENT: {get_sentiment_label(content['sentiment'])}\n\n"
                 if content.get('sources'):
                     email_body += "Sources:\n"
@@ -165,6 +178,7 @@ def format_telegram_message(digest_results):
         source_message = f"📰 <b>{source}</b>\n\n"
         
         summary = f"<b>Summary:</b>\n{content['summary']}\n\n"
+        key_insights = f"<b>Key Insights:</b>\n" + "\n".join([f"- {insight}" for insight in content['key_insights']]) + "\n\n"
         explanation = f"<b>Key Concepts:</b>\n{content['explanation']}\n\n"
         sentiment = f"<b>Sentiment:</b> {get_sentiment_emoji(content['sentiment'])}\n\n"
         
@@ -173,6 +187,12 @@ def format_telegram_message(digest_results):
         else:
             source_messages.append(source_message)
             source_message = summary
+        
+        if len(source_message + key_insights) <= 4096:
+            source_message += key_insights
+        else:
+            source_messages.append(source_message)
+            source_message = key_insights
         
         if len(source_message + explanation) <= 4096:
             source_message += explanation
@@ -200,6 +220,7 @@ def format_telegram_message(digest_results):
         messages.extend(source_messages)
         
     return messages
+
 def get_sentiment_label(sentiment):
     if sentiment > 0.3:
         return "Positive"
@@ -230,7 +251,7 @@ def main():
             credentials['TELEGRAM_CHAT_ID']
         )
 
-        telegram_notifier.send_message("Starting AI News Digest...")
+        telegram_notifier.send_message(["Starting AI News Digest..."])
 
         print("Fetching RSS feeds...")
         for feed_name, feed_url in rss_feeds.items():

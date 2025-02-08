@@ -350,7 +350,7 @@ def main():
                         analysis = digest.analyze_content(entries)
                         all_digests[feed_name] = analysis
                     break
-               except Exception as e:
+                except Exception as e:
                     print(f"Error fetching {feed_name}: {str(e)}. Retries left: {retries}")
                     retries -= 1
                     time.sleep(5)  # Wait for 5 seconds before retrying

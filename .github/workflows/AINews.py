@@ -80,7 +80,7 @@ class NewsDigest:
 
     def analyze_content(self, entries):
         if not entries:
-            return {'summary': 'No recent updates', 'explanation': '', 'sources': [], 'sentiment': 0, 'key_insights': []}
+            return {'summary': 'No recent updates', 'explanation': '', 'sources': [], 'sentiment': 0, 'key_takeaways': []}
 
         content = "\n\n".join([f"Title: {e['title']}\nSummary: {e['summary']}" for e in entries])
 
@@ -103,11 +103,11 @@ class NewsDigest:
                 max_tokens=500
             )
 
-            insights_response = self.client.chat.completions.create(
+            takeaways_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI analyst extracting key insights and takeaways from news articles."},
-                    {"role": "user", "content": f"Extract the key insights and actionable takeaways from these AI news articles in a bullet-point list:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI analyst extracting key takeaways and implications from news articles."},
+                    {"role": "user", "content": f"Extract the key takeaways and implications from these AI news articles in a bullet-point list:\n\n{content}"}
                 ],
                 max_tokens=500
             )
@@ -119,10 +119,10 @@ class NewsDigest:
                 'explanation': explanation_response.choices[0].message.content,
                 'sources': [{'title': e['title'], 'link': e['link']} for e in entries],
                 'sentiment': sentiment,
-                'key_insights': insights_response.choices[0].message.content.strip().split('\n')
+                'key_takeaways': takeaways_response.choices[0].message.content.strip().split('\n')
             }
         except Exception as e:
-            return {'summary': f"Error analyzing content: {str(e)}", 'explanation': '', 'sources': [], 'sentiment': 0, 'key_insights': []}
+            return {'summary': f"Error analyzing content: {str(e)}", 'explanation': '', 'sources': [], 'sentiment': 0, 'key_takeaways': []}
 
     def analyze_sentiment(self, text):
         blob = TextBlob(text)
@@ -143,12 +143,12 @@ def send_email(sender_email, app_password, recipient_email, digest_results):
             email_body = "Daily AI News Digest:\n\n"
             for source, content in digest_results.items():
                 email_body += f"\n{source}:\n"
-                email_body += f"SUMMARY:\n{content['summary']}\n\n"
-                email_body += f"KEY INSIGHTS:\n"
-                for insight in content['key_insights']:
-                    email_body += f"- {insight}\n"
-                email_body += f"\nKEY CONCEPTS EXPLAINED:\n{content['explanation']}\n\n"
                 email_body += f"SENTIMENT: {get_sentiment_label(content['sentiment'])}\n\n"
+                email_body += f"SUMMARY:\n{content['summary']}\n\n"
+                email_body += f"KEY TAKEAWAYS:\n"
+                for takeaway in content['key_takeaways']:
+                    email_body += f"- {takeaway}\n"
+                email_body += f"\nKEY CONCEPTS EXPLAINED:\n{content['explanation']}\n\n"
                 if content.get('sources'):
                     email_body += "Sources:\n"
                     for source in content['sources']:
@@ -177,10 +177,16 @@ def format_telegram_message(digest_results):
         source_messages = []
         source_message = f"📰 <b>{source}</b>\n\n"
         
-        summary = f"<b>Summary:</b>\n{content['summary']}\n\n"
-        key_insights = f"<b>Key Insights:</b>\n" + "\n".join([f"- {insight}" for insight in content['key_insights']]) + "\n\n"
-        explanation = f"<b>Key Concepts:</b>\n{content['explanation']}\n\n"
         sentiment = f"<b>Sentiment:</b> {get_sentiment_emoji(content['sentiment'])}\n\n"
+        summary = f"<b>Summary:</b>\n{content['summary']}\n\n"
+        key_takeaways = f"<b>Key Takeaways:</b>\n" + "\n".join([f"- {takeaway}" for takeaway in content['key_takeaways']]) + "\n\n"
+        explanation = f"<b>Key Concepts:</b>\n{content['explanation']}\n\n"
+        
+        if len(source_message + sentiment) <= 4096:
+            source_message += sentiment
+        else:
+            source_messages.append(source_message)
+            source_message = sentiment
         
         if len(source_message + summary) <= 4096:
             source_message += summary
@@ -188,23 +194,17 @@ def format_telegram_message(digest_results):
             source_messages.append(source_message)
             source_message = summary
         
-        if len(source_message + key_insights) <= 4096:
-            source_message += key_insights
+        if len(source_message + key_takeaways) <= 4096:
+            source_message += key_takeaways
         else:
             source_messages.append(source_message)
-            source_message = key_insights
+            source_message = key_takeaways
         
         if len(source_message + explanation) <= 4096:
             source_message += explanation
         else:
             source_messages.append(source_message)
             source_message = explanation
-        
-        if len(source_message + sentiment) <= 4096:
-            source_message += sentiment
-        else:
-            source_messages.append(source_message)
-            source_message = sentiment
         
         if content.get('sources'):
             source_message += "<b>Sources:</b>\n"

@@ -187,12 +187,41 @@ def format_telegram_message(digest_results):
 
     messages = []
     for source, content in digest_results.items():
+        message_parts = []
         message = f"🤖 <b>AI News Digest - {source}</b>\n\n"
-        message += f"<b>Executive Summary:</b>\n{content['executive_summary']}\n\n"
-        message += f"<b>Key Insights:</b>\n{content['key_insights']}\n\n"
-        message += f"<b>Product Innovation Opportunities:</b>\n{content['product_innovation']}\n\n"
-        message += f"<b>Key Concepts:</b>\n{content['key_concepts']}\n\n"
-        messages.append(message)
+        
+        executive_summary = f"<b>Executive Summary:</b>\n{content['executive_summary']}\n\n"
+        key_insights = f"<b>Key Insights:</b>\n{content['key_insights']}\n\n"
+        product_innovation = f"<b>Product Innovation Opportunities:</b>\n{content['product_innovation']}\n\n"
+        key_concepts = f"<b>Key Concepts:</b>\n{content['key_concepts']}\n\n"
+        
+        if len(message + executive_summary) <= 4096:
+            message += executive_summary
+        else:
+            message_parts.append(message)
+            message = executive_summary
+        
+        if len(message + key_insights) <= 4096:
+            message += key_insights
+        else:
+            message_parts.append(message)
+            message = key_insights
+        
+        if len(message + product_innovation) <= 4096:
+            message += product_innovation
+        else:
+            message_parts.append(message)
+            message = product_innovation
+        
+        if len(message + key_concepts) <= 4096:
+            message += key_concepts
+        else:
+            message_parts.append(message)
+            message = key_concepts
+        
+        message_parts.append(message)
+        messages.extend(message_parts)
+        
     return messages
 
 def get_sentiment_label(sentiment):

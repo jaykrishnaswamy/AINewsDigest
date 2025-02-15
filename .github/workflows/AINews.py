@@ -158,7 +158,7 @@ class NewsDigest:
         # Combine the indicators
         is_marketing = (keyword_count > 2) or (sentiment > 0.5) or has_excessive_punctuation or has_capitalized_words
     
-    return is_marketing
+        return is_marketing
 
     def analyze_sentiment(self, text):
         blob = TextBlob(text)

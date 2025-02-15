@@ -82,12 +82,9 @@ class NewsDigest:
         if not entries:
             return {
                 'executive_summary': '',
-                'industry_trends': '',
+                'key_insights': '',
                 'product_innovation': '',
-                'competitor_analysis': '',
-                'regulatory_updates': '',
-                'customer_insights': '',
-                'strategic_recommendations': '',
+                'key_concepts': '',
                 'sources': []
             }
 
@@ -98,16 +95,16 @@ class NewsDigest:
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an AI assistant creating a concise executive summary of AI news for a technology product executive."},
-                    {"role": "user", "content": f"Create a concise executive summary highlighting the most important insights and takeaways from these AI news articles for a technology product executive:\n\n{content}"}
+                    {"role": "user", "content": f"Create a concise executive summary in a few sentences capturing the key points from these AI news articles:\n\n{content}"}
                 ],
                 max_tokens=200
             )
 
-            industry_trends_response = self.client.chat.completions.create(
+            key_insights_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI analyst identifying industry trends and market dynamics related to AI and technology products."},
-                    {"role": "user", "content": f"Identify and summarize the latest industry trends, market dynamics, and potential disruptions mentioned in these AI news articles:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI analyst extracting key insights from AI news articles."},
+                    {"role": "user", "content": f"Extract any new key insights from these AI news articles:\n\n{content}"}
                 ],
                 max_tokens=200
             )
@@ -115,67 +112,34 @@ class NewsDigest:
             product_innovation_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI analyst highlighting innovative AI-powered products and use cases."},
-                    {"role": "user", "content": f"Identify and showcase innovative AI-powered products, features, or use cases mentioned in these news articles:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI strategist identifying product innovation opportunities based on AI news."},
+                    {"role": "user", "content": f"Identify potential product innovation opportunities based on the insights from these AI news articles:\n\n{content}"}
                 ],
                 max_tokens=200
             )
 
-            competitor_analysis_response = self.client.chat.completions.create(
+            key_concepts_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI analyst providing insights on competitors' AI initiatives and their implications."},
-                    {"role": "user", "content": f"Analyze the AI-related moves, initiatives, and strategic shifts of key competitors mentioned in these news articles and their potential implications:\n\n{content}"}
-                ],
-                max_tokens=200
-            )
-
-            regulatory_updates_response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an AI analyst tracking regulatory changes and policy updates related to AI and technology products."},
-                    {"role": "user", "content": f"Identify and summarize any regulatory changes, government policies, or legal developments related to AI and technology products mentioned in these news articles:\n\n{content}"}
-                ],
-                max_tokens=200
-            )
-
-            customer_insights_response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an AI analyst extracting customer insights and feedback from news articles."},
-                    {"role": "user", "content": f"Extract and summarize relevant customer insights, user feedback, or market research findings mentioned in these AI news articles:\n\n{content}"}
-                ],
-                max_tokens=200
-            )
-
-            strategic_recommendations_response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an AI strategist providing strategic recommendations based on AI news insights."},
-                    {"role": "user", "content": f"Based on the analysis of these AI news articles, provide strategic recommendations or actionable insights for a technology product executive:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI expert explaining key AI concepts from news articles."},
+                    {"role": "user", "content": f"Extract and explain the key AI concepts mentioned in these news articles:\n\n{content}"}
                 ],
                 max_tokens=200
             )
 
             return {
                 'executive_summary': executive_summary_response.choices[0].message.content.strip(),
-                'industry_trends': industry_trends_response.choices[0].message.content.strip(),
+                'key_insights': key_insights_response.choices[0].message.content.strip(),
                 'product_innovation': product_innovation_response.choices[0].message.content.strip(),
-                'competitor_analysis': competitor_analysis_response.choices[0].message.content.strip(),
-                'regulatory_updates': regulatory_updates_response.choices[0].message.content.strip(),
-                'customer_insights': customer_insights_response.choices[0].message.content.strip(),
-                'strategic_recommendations': strategic_recommendations_response.choices[0].message.content.strip(),
+                'key_concepts': key_concepts_response.choices[0].message.content.strip(),
                 'sources': [{'title': e['title'], 'link': e['link']} for e in entries]
             }
         except Exception as e:
             return {
                 'executive_summary': f"Error analyzing content: {str(e)}",
-                'industry_trends': '',
+                'key_insights': '',
                 'product_innovation': '',
-                'competitor_analysis': '',
-                'regulatory_updates': '',
-                'customer_insights': '',
-                'strategic_recommendations': '',
+                'key_concepts': '',
                 'sources': []
             }
 
@@ -196,49 +160,13 @@ def send_email(sender_email, app_password, recipient_email, digest_results):
         else:
             msg['Subject'] = f"AI News Digest - {datetime.now().strftime('%Y-%m-%d')}"
             email_body = "AI News Digest for Technology Product Executives\n\n"
-            email_body += "EXECUTIVE SUMMARY:\n"
             for source, content in digest_results.items():
-                email_body += f"{content['executive_summary']}\n\n"
-            email_body += "-" * 50 + "\n\n"
-
-            email_body += "INDUSTRY TRENDS AND MARKET ANALYSIS:\n"
-            for source, content in digest_results.items():
-                email_body += f"{content['industry_trends']}\n\n"
-            email_body += "-" * 50 + "\n\n"
-
-            email_body += "PRODUCT INNOVATION AND USE CASES:\n"
-            for source, content in digest_results.items():
-                email_body += f"{content['product_innovation']}\n\n"
-            email_body += "-" * 50 + "\n\n"
-
-            email_body += "COMPETITOR ANALYSIS:\n"
-            for source, content in digest_results.items():
-                email_body += f"{content['competitor_analysis']}\n\n"
-            email_body += "-" * 50 + "\n\n"
-
-            email_body += "REGULATORY AND POLICY UPDATES:\n"
-            for source, content in digest_results.items():
-                email_body += f"{content['regulatory_updates']}\n\n"
-            email_body += "-" * 50 + "\n\n"
-
-            email_body += "CUSTOMER INSIGHTS AND FEEDBACK:\n"
-            for source, content in digest_results.items():
-                email_body += f"{content['customer_insights']}\n\n"
-            email_body += "-" * 50 + "\n\n"
-
-            email_body += "STRATEGIC RECOMMENDATIONS:\n"
-            for source, content in digest_results.items():
-                email_body += f"{content['strategic_recommendations']}\n\n"
-            email_body += "-" * 50 + "\n\n"
-
-            email_body += "SOURCES:\n"
-            for source, content in digest_results.items():
-                if content.get('sources'):
-                    email_body += f"{source}:\n"
-                    for article in content['sources']:
-                        email_body += f"- {article['title']}: {article['link']}\n"
-                    email_body += "\n"
-            email_body += "-" * 50 + "\n"
+                email_body += f"Source: {source}\n"
+                email_body += f"Executive Summary: {content['executive_summary']}\n\n"
+                email_body += f"Key Insights: {content['key_insights']}\n\n"
+                email_body += f"Product Innovation Opportunities: {content['product_innovation']}\n\n"
+                email_body += f"Key Concepts: {content['key_concepts']}\n\n"
+                email_body += "-" * 50 + "\n\n"
 
         body = MIMEText(email_body, 'plain', 'utf-8')
         msg.attach(body)
@@ -258,52 +186,13 @@ def format_telegram_message(digest_results):
         return ["🤖 <b>AI News Digest - No New Updates</b>\n\nThere are no recent updates for your AI news digest."]
 
     messages = []
-    message = "🤖 <b>AI News Digest for Technology Product Executives</b>\n\n"
-
-    message += "<b>Executive Summary:</b>\n"
     for source, content in digest_results.items():
-        message += f"{content['executive_summary']}\n\n"
-    messages.append(message)
-
-    message = "<b>Industry Trends and Market Analysis:</b>\n"
-    for source, content in digest_results.items():
-        message += f"{content['industry_trends']}\n\n"
-    messages.append(message)
-
-    message = "<b>Product Innovation and Use Cases:</b>\n"
-    for source, content in digest_results.items():
-        message += f"{content['product_innovation']}\n\n"
-    messages.append(message)
-
-    message = "<b>Competitor Analysis:</b>\n"
-    for source, content in digest_results.items():
-        message += f"{content['competitor_analysis']}\n\n"
-    messages.append(message)
-
-    message = "<b>Regulatory and Policy Updates:</b>\n"
-    for source, content in digest_results.items():
-        message += f"{content['regulatory_updates']}\n\n"
-    messages.append(message)
-
-    message = "<b>Customer Insights and Feedback:</b>\n"
-    for source, content in digest_results.items():
-        message += f"{content['customer_insights']}\n\n"
-    messages.append(message)
-
-    message = "<b>Strategic Recommendations:</b>\n"
-    for source, content in digest_results.items():
-        message += f"{content['strategic_recommendations']}\n\n"
-    messages.append(message)
-
-    message = "<b>Sources:</b>\n"
-    for source, content in digest_results.items():
-        if content.get('sources'):
-            message += f"<b>{source}:</b>\n"
-            for article in content['sources']:
-                message += f"• <a href='{article['link']}'>{article['title']}</a>\n"
-            message += "\n"
-    messages.append(message)
-
+        message = f"🤖 <b>AI News Digest - {source}</b>\n\n"
+        message += f"<b>Executive Summary:</b>\n{content['executive_summary']}\n\n"
+        message += f"<b>Key Insights:</b>\n{content['key_insights']}\n\n"
+        message += f"<b>Product Innovation Opportunities:</b>\n{content['product_innovation']}\n\n"
+        message += f"<b>Key Concepts:</b>\n{content['key_concepts']}\n\n"
+        messages.append(message)
     return messages
 
 def get_sentiment_label(sentiment):

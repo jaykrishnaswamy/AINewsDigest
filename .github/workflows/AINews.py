@@ -144,19 +144,19 @@ class NewsDigest:
             }
 
     def is_marketing_content(content):
-    # Keyword and phrase analysis
-    marketing_keywords = ['exclusive offer', 'limited time', 'buy now', 'special promotion']
-    keyword_count = sum([content.lower().count(keyword.lower()) for keyword in marketing_keywords])
+        # Keyword and phrase analysis
+        marketing_keywords = ['exclusive offer', 'limited time', 'buy now', 'special promotion']
+        keyword_count = sum([content.lower().count(keyword.lower()) for keyword in marketing_keywords])
     
-    # Sentiment analysis
-    sentiment = TextBlob(content).sentiment.polarity
+        # Sentiment analysis
+        sentiment = TextBlob(content).sentiment.polarity
     
-    # Heuristic rules and patterns
-    has_excessive_punctuation = content.count('!') > 3 or content.count('?') > 3
-    has_capitalized_words = len([word for word in content.split() if word.isupper()]) > 3
+        # Heuristic rules and patterns
+        has_excessive_punctuation = content.count('!') > 3 or content.count('?') > 3
+        has_capitalized_words = len([word for word in content.split() if word.isupper()]) > 3
     
-    # Combine the indicators
-    is_marketing = (keyword_count > 2) or (sentiment > 0.5) or has_excessive_punctuation or has_capitalized_words
+        # Combine the indicators
+        is_marketing = (keyword_count > 2) or (sentiment > 0.5) or has_excessive_punctuation or has_capitalized_words
     
     return is_marketing
 

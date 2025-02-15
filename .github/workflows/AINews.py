@@ -10,7 +10,6 @@ import time
 from textblob import TextBlob
 import textwrap
 
-
 class Config:
     def __init__(self):
         self.credentials = {
@@ -28,7 +27,6 @@ class Config:
             'Google AI Blog': 'http://googleaiblog.blogspot.com/atom.xml',
             'IBM Research Blog - AI': 'https://research.ibm.com/blog/category/artificial-intelligence/feed',
             'FAIR Blog': 'https://research.facebook.com/blog/ai-category/rss/',
-            'AWS Machine Learning Blog': 'https://aws.amazon.com/blogs/machine-learning/feed/',
             'Microsoft Research Blog - AI': 'https://www.microsoft.com/en-us/research/blog/category/artificial-intelligence/feed/',
             'NVIDIA AI Blog': 'https://blogs.nvidia.com/blog/category/deep-learning/feed/',
             'AI Trends': 'https://aitrends.com/feed/'
@@ -79,8 +77,8 @@ class NewsDigest:
                 })
 
         return recent_entries[:10]
-        
- def analyze_content(self, entries):
+
+    def analyze_content(self, entries):
         if not entries:
             return {
                 'summary': '',
@@ -132,7 +130,6 @@ class NewsDigest:
                 'key_concepts': '',
                 'sources': []
             }
-
 
     def analyze_sentiment(self, text):
         blob = TextBlob(text)
@@ -188,7 +185,6 @@ def format_telegram_message(digest_results):
 
     return messages
 
-
 def get_sentiment_label(sentiment):
     if sentiment > 0.3:
         return "Positive"
@@ -204,23 +200,6 @@ def get_sentiment_emoji(sentiment):
         return "😔"
     else:
         return "😐"
-
-def is_marketing_content(content):
-    # Keyword and phrase analysis
-    marketing_keywords = ['exclusive offer', 'limited time', 'buy now', 'special promotion']
-    keyword_count = sum([content.lower().count(keyword.lower()) for keyword in marketing_keywords])
-    
-    # Sentiment analysis
-    sentiment = TextBlob(content).sentiment.polarity
-    
-    # Heuristic rules and patterns
-    has_excessive_punctuation = content.count('!') > 3 or content.count('?') > 3
-    has_capitalized_words = len([word for word in content.split() if word.isupper()]) > 3
-    
-    # Combine the indicators
-    is_marketing = (keyword_count > 2) or (sentiment > 0.5) or has_excessive_punctuation or has_capitalized_words
-    
-    return is_marketing
 
 def main():
     try:
@@ -275,4 +254,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

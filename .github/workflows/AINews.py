@@ -79,12 +79,11 @@ class NewsDigest:
                 })
 
         return recent_entries[:10]
-
-    def analyze_content(self, entries):
+        
+ def analyze_content(self, entries):
         if not entries:
             return {
-                'executive_summary': '',
-                'key_insights': '',
+                'summary': '',
                 'product_innovation': '',
                 'key_concepts': '',
                 'sources': []
@@ -93,20 +92,11 @@ class NewsDigest:
         content = "\n\n".join([f"Title: {e['title']}\nSummary: {e['summary']}" for e in entries])
 
         try:
-            executive_summary_response = self.client.chat.completions.create(
+            summary_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI assistant creating a concise executive summary of AI news for a technology product executive in the B2B SaaS industry."},
-                    {"role": "user", "content": f"Create a concise executive summary in a few sentences capturing the key strategic insights and takeaways from these AI news articles relevant to B2B SaaS product development and decision-making:\n\n{content}"}
-                ],
-                max_tokens=200
-            )
-
-            key_insights_response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an AI analyst extracting key insights from AI news articles relevant to B2B SaaS companies."},
-                    {"role": "user", "content": f"Extract key insights from these AI news articles that have strategic implications for B2B SaaS product development, market positioning, and customer success. Focus on trends, best practices, and case studies demonstrating the impact of AI on key business metrics such as revenue growth, customer retention, and operational efficiency:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI assistant creating a concise summary of AI news."},
+                    {"role": "user", "content": f"Create a concise summary capturing the key points from these AI news articles:\n\n{content}"}
                 ],
                 max_tokens=200
             )
@@ -114,8 +104,8 @@ class NewsDigest:
             product_innovation_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI strategist identifying product innovation opportunities based on AI news for B2B SaaS companies."},
-                    {"role": "user", "content": f"Identify potential product innovation opportunities based on the insights from these AI news articles. Focus on AI applications and use cases specific to the B2B SaaS domain, such as AI-powered personalization, predictive analytics for customer success, chatbots for B2B customer support, and AI-driven marketing automation. Provide actionable recommendations for leveraging AI to enhance product features, streamline operations, and drive innovation:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI strategist identifying product innovation opportunities based on AI news."},
+                    {"role": "user", "content": f"Identify potential product innovation opportunities based on the insights from these AI news articles:\n\n{content}"}
                 ],
                 max_tokens=200
             )
@@ -123,27 +113,26 @@ class NewsDigest:
             key_concepts_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI expert explaining key AI concepts from news articles relevant to B2B SaaS product executives."},
-                    {"role": "user", "content": f"Extract and explain the key AI concepts mentioned in these news articles. Provide concise explanations that distill complex AI concepts into actionable takeaways for B2B SaaS product executives:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI expert explaining key AI concepts from news articles."},
+                    {"role": "user", "content": f"Extract and explain the key AI concepts mentioned in these news articles:\n\n{content}"}
                 ],
                 max_tokens=200
             )
 
             return {
-                'executive_summary': executive_summary_response.choices[0].message.content.strip(),
-                'key_insights': key_insights_response.choices[0].message.content.strip(),
+                'summary': summary_response.choices[0].message.content.strip(),
                 'product_innovation': product_innovation_response.choices[0].message.content.strip(),
                 'key_concepts': key_concepts_response.choices[0].message.content.strip(),
                 'sources': [{'title': e['title'], 'link': e['link']} for e in entries]
             }
         except Exception as e:
             return {
-                'executive_summary': f"Error analyzing content: {str(e)}",
-                'key_insights': '',
+                'summary': f"Error analyzing content: {str(e)}",
                 'product_innovation': '',
                 'key_concepts': '',
                 'sources': []
             }
+
 
     def analyze_sentiment(self, text):
         blob = TextBlob(text)
@@ -161,11 +150,10 @@ def send_email(sender_email, app_password, recipient_email, digest_results):
             email_body = "There are no recent updates for your AI news digest."
         else:
             msg['Subject'] = f"AI News Digest - {datetime.now().strftime('%Y-%m-%d')}"
-            email_body = "AI News Digest for Technology Product Executives\n\n"
+            email_body = "AI News Digest\n\n"
             for source, content in digest_results.items():
                 email_body += f"Source: {source}\n"
-                email_body += f"Executive Summary: {content['executive_summary']}\n\n"
-                email_body += f"Key Insights: {content['key_insights']}\n\n"
+                email_body += f"Summary: {content['summary']}\n\n"
                 email_body += f"Product Innovation Opportunities: {content['product_innovation']}\n\n"
                 email_body += f"Key Concepts: {content['key_concepts']}\n\n"
                 email_body += "-" * 50 + "\n\n"
@@ -190,8 +178,7 @@ def format_telegram_message(digest_results):
     messages = []
     for source, content in digest_results.items():
         message = f"🤖 <b>AI News Digest - {source}</b>\n\n"
-        message += f"<b>Executive Summary:</b>\n{content['executive_summary']}\n\n"
-        message += f"<b>Key Insights:</b>\n{content['key_insights']}\n\n"
+        message += f"<b>Summary:</b>\n{content['summary']}\n\n"
         message += f"<b>Product Innovation Opportunities:</b>\n{content['product_innovation']}\n\n"
         message += f"<b>Key Concepts:</b>\n{content['key_concepts']}\n\n"
         
@@ -200,6 +187,7 @@ def format_telegram_message(digest_results):
         messages.extend(message_chunks)
 
     return messages
+
 
 def get_sentiment_label(sentiment):
     if sentiment > 0.3:
@@ -257,10 +245,9 @@ def main():
                 print(f"Fetching {feed_name}...")
                 try:
                     entries = digest.fetch_rss_feed(feed_url)
-                    filtered_entries = [entry for entry in entries if not is_marketing_content(entry['summary'])]
-                    if filtered_entries:
+                    if entries:
                         print(f"Analyzing content for {feed_name}...")
-                        analysis = digest.analyze_content(filtered_entries)
+                        analysis = digest.analyze_content(entries)
                         all_digests[feed_name] = analysis
                     break
                 except Exception as e:
@@ -288,3 +275,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

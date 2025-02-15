@@ -94,8 +94,8 @@ class NewsDigest:
             executive_summary_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI assistant creating a concise executive summary of AI news for a technology product executive."},
-                    {"role": "user", "content": f"Create a concise executive summary in a few sentences capturing the key points from these AI news articles:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI assistant creating a concise executive summary of AI news for a technology product executive in the B2B SaaS industry."},
+                    {"role": "user", "content": f"Create a concise executive summary in a few sentences capturing the key strategic insights and takeaways from these AI news articles relevant to B2B SaaS product development and decision-making:\n\n{content}"}
                 ],
                 max_tokens=200
             )
@@ -103,8 +103,8 @@ class NewsDigest:
             key_insights_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI analyst extracting key insights from AI news articles."},
-                    {"role": "user", "content": f"Extract any new key insights from these AI news articles:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI analyst extracting key insights from AI news articles relevant to B2B SaaS companies."},
+                    {"role": "user", "content": f"Extract key insights from these AI news articles that have strategic implications for B2B SaaS product development, market positioning, and customer success. Focus on trends, best practices, and case studies demonstrating the impact of AI on key business metrics such as revenue growth, customer retention, and operational efficiency:\n\n{content}"}
                 ],
                 max_tokens=200
             )
@@ -112,8 +112,8 @@ class NewsDigest:
             product_innovation_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI strategist identifying product innovation opportunities based on AI news."},
-                    {"role": "user", "content": f"Identify potential product innovation opportunities based on the insights from these AI news articles:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI strategist identifying product innovation opportunities based on AI news for B2B SaaS companies."},
+                    {"role": "user", "content": f"Identify potential product innovation opportunities based on the insights from these AI news articles. Focus on AI applications and use cases specific to the B2B SaaS domain, such as AI-powered personalization, predictive analytics for customer success, chatbots for B2B customer support, and AI-driven marketing automation. Provide actionable recommendations for leveraging AI to enhance product features, streamline operations, and drive innovation:\n\n{content}"}
                 ],
                 max_tokens=200
             )
@@ -121,8 +121,8 @@ class NewsDigest:
             key_concepts_response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an AI expert explaining key AI concepts from news articles."},
-                    {"role": "user", "content": f"Extract and explain the key AI concepts mentioned in these news articles:\n\n{content}"}
+                    {"role": "system", "content": "You are an AI expert explaining key AI concepts from news articles relevant to B2B SaaS product executives."},
+                    {"role": "user", "content": f"Extract and explain the key AI concepts mentioned in these news articles. Provide concise explanations that distill complex AI concepts into actionable takeaways for B2B SaaS product executives:\n\n{content}"}
                 ],
                 max_tokens=200
             )
@@ -142,6 +142,23 @@ class NewsDigest:
                 'key_concepts': '',
                 'sources': []
             }
+
+    def is_marketing_content(content):
+    # Keyword and phrase analysis
+    marketing_keywords = ['exclusive offer', 'limited time', 'buy now', 'special promotion']
+    keyword_count = sum([content.lower().count(keyword.lower()) for keyword in marketing_keywords])
+    
+    # Sentiment analysis
+    sentiment = TextBlob(content).sentiment.polarity
+    
+    # Heuristic rules and patterns
+    has_excessive_punctuation = content.count('!') > 3 or content.count('?') > 3
+    has_capitalized_words = len([word for word in content.split() if word.isupper()]) > 3
+    
+    # Combine the indicators
+    is_marketing = (keyword_count > 2) or (sentiment > 0.5) or has_excessive_punctuation or has_capitalized_words
+    
+    return is_marketing
 
     def analyze_sentiment(self, text):
         blob = TextBlob(text)
@@ -263,9 +280,10 @@ def main():
                 print(f"Fetching {feed_name}...")
                 try:
                     entries = digest.fetch_rss_feed(feed_url)
-                    if entries:
+                    filtered_entries = [entry for entry in entries if not is_marketing_content(entry['summary'])]
+                    if filtered_entries:
                         print(f"Analyzing content for {feed_name}...")
-                        analysis = digest.analyze_content(entries)
+                        analysis = digest.analyze_content(filtered_entries)
                         all_digests[feed_name] = analysis
                     break
                 except Exception as e:
